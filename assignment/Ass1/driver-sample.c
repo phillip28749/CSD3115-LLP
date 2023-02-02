@@ -19,9 +19,9 @@ void test2()
 {
 		printf("sq_root_compute_array \n");
 
-		unsigned int a[1] = {3};
+		unsigned int a[3] = {25, 169, 5683};
 
-		sq_root_compute_array(1, a );
+		sq_root_compute_array(3, a );
 }
 
 

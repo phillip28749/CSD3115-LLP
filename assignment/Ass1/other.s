@@ -1,21 +1,28 @@
 	.file	"test.c"
 	.text
-	.globl	arith
-	.type	arith, @function
-arith:
-.LFB23:
+	.globl	gt
+	.type	gt, @function
+gt:
+.LFB0:
 	.cfi_startproc
 	endbr64
-	leaq	(%rdi,%rsi), %rax
-	addq	%rdx, %rax
-	leaq	(%rsi,%rsi,2), %rdx
-	salq	$4, %rdx
-	leaq	4(%rdi,%rdx), %rdx
-	imulq	%rdx, %rax
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	.cfi_offset 6, -16
+	movq	%rsp, %rbp
+	.cfi_def_cfa_register 6
+	movq	%rdi, -8(%rbp)
+	movq	%rsi, -16(%rbp)
+	movq	-8(%rbp), %rax
+	cmpq	-16(%rbp), %rax
+	setg	%al
+	movzbl	%al, %eax
+	popq	%rbp
+	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE23:
-	.size	arith, .-arith
+.LFE0:
+	.size	gt, .-gt
 	.ident	"GCC: (Ubuntu 11.3.0-1ubuntu1~22.04) 11.3.0"
 	.section	.note.GNU-stack,"",@progbits
 	.section	.note.gnu.property,"a"
