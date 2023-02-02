@@ -6,5 +6,5 @@ gcc -std=c99 -pedantic -Wall -Wextra -Wno-deprecated -fno-stack-protector -no-pi
 ./vpl_execution
 
 
-* C to Assembly
+* C to Assembly*
 gcc –Og –S <sourcecode>.c
