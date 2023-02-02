@@ -1,22 +1,36 @@
+/* Start Header
+
+*****************************************************************/
+
+/*!
+
+\file square-root.s
+
+\author Chen Yen Hsun, c.yenhsun, 2002761
+
+\par email: c.yenhsun@digipen.edu
+
+\date Jan 29, 2023
+
+\brief
+Computing nearest sqaure roots using assembly code
+
+Copyright (C) 2023 DigiPen Institute of Technology.
+
+Reproduction or disclosure of this file or its contents without the
+
+prior written consent of DigiPen Institute of Technology is prohibited.
+
+*/
+
+/* End Header
+
+*******************************************************************/
 	.globl sq_root_compute_array
 	.globl sq_root_compute_varargs
 
 	.text
-#sq_root_compute_array:
-#        pushq   %rbp
-#        movq    %rsp, %rbp
-#        subq    $48, %rsp
-#        movl    %edi, -36(%rbp)
-#        movq    %rsi, -48(%rbp)
-#        movl    $0, -16(%rbp)
-#        movl    -16(%rbp), %eax
-#        movl    %eax, %esi
-#        movl    $format, %edi
-#        call    printf
-#        movq    %rbp, %rsp
-#        popq    %rbp
-#        ret
-                     
+            
 sq_root_compute:
 	subq	$8, %rsp			# allocate 8 byte of the stack		
 	movl	%edi, %edx			# store val in edi register
@@ -61,79 +75,108 @@ sq_root_compute_array:
 	popq	%r12				# Pop the value of r12 from the stack
 	ret
 
-
-
-#sq_root_compute_varargs:
-#        pushq   %rbp
-#        movq    %rsp, %rbp
-#        subq    $120, %rsp
-#        movl    %edi, -108(%rbp)
-#        movq    %rsi, -48(%rbp)
-#        movq    %rdx, -40(%rbp)
-#        movq    %rcx, -32(%rbp)
-#        movq    %r8, -24(%rbp)
-#        movq    %r9, -16(%rbp)
-#        movl    %eax, %esi
-#        movl    $format, %edi
-#        call    printf
-#        movq    %rbp, %rsp
-#        popq    %rbp		
-#        ret
-#
-#	.data
-
 sq_root_compute_varargs:
+        # Save the base pointer
         pushq   %rbp
         movq    %rsp, %rbp
+        
+        # Allocate stack space
         subq    $120, %rsp
-        # move 6 registers stored args onto stack
+        
+        # Store the 6 register stored arguments onto the stack
         movl    %edi, -56(%rbp)
         movq    %rsi, -48(%rbp)
         movq    %rdx, -40(%rbp)
         movq    %rcx, -32(%rbp)
         movq    %r8, -24(%rbp)
         movq    %r9, -16(%rbp)
-		xorl %ecx, %ecx
-		xorl %edx, %edx
-		movl $1, %edx
+        
+        # Initialize the argument counter and sub value
+        xorq    %rcx,%rcx       # arg counter = 0
+        movl    $1,%edx         # sub = 1
+        
+        # Load the first argument into EDI
         movl    -56(%rbp,%rcx,8),%edi     # v
-		cmpl $0, %edi
-		jne .varargs_inner_loop
-		
-.varargs_outer_loop:
+        testl   %edi,%edi       
+        
+        # If EDI is not zero, jump to inner loop
+        jnz     .sq_root_compute_varargs_inner_loop
+
+.sq_root_compute_varargs_outer_loop:
+        # Increase the argument counter
         incl    %ecx            # increase arg counter
+        
+        # Initialize the root value
         xorq    %rax,%rax       # root = 0
         movl    $1,%edx         # sub = 1
+        
+        # Load the next argument into EDI
         movl    -56(%rbp,%rcx,8),%edi           # v
+        
+        # If the argument counter >= 6, use the argument from the stack
         cmpl    $6, %ecx                        # >= 6 registers stored arg
         cmovge  -32(%rbp, %rcx, 8), %edi   
+        
+        # Test if EDI is not zero
         testl   %edi,%edi       
-        jnz     .varargs_inner_loop
+        
+        # If EDI is not zero, jump to inner loop
+        jnz     .sq_root_compute_varargs_inner_loop
+		
+		# No more args to process
+		# Restore the stack pointer
 		movq    %rbp, %rsp
         popq    %rbp		
+        
+        # Return
         ret    
-.varargs_inner_loop:
+
+.sq_root_compute_varargs_inner_loop:
+        # Decrement EDI by sub value
         subl    %edx, %edi      # v -= sub
-        jb      .varargs_print
+        
+        # If EDI is negative, jump to print result
+        jb      .sq_root_compute_varargs_print
+        
+        # Increment sub value by 2
         addl    $2, %edx        # sub += 2
+        
+        # Increment root value
         incl    %eax            # ++root
-        jmp     .varargs_inner_loop
-.varargs_print:
-        pushq   %rcx                    # store 
-        pushq   %rax                    # store rax
-        subq    $8,%rsp                 # align stack for func call
-        movl    -56(%rbp,%rcx,8),%esi   # v
-        cmpl    $6, %ecx                # >= 6 registers stored arg
-        cmovge  -32(%rbp, %rcx, 8), %esi      
-        movl    %eax,%edx               # printf second agr
-        movl    $format, %edi           # printf format
-        xorq     %rax, %rax             # RAX = 0 since no vector registers used for calling printf
+        
+        # Jump back to inner loop
+        jmp     .sq_root_compute_varargs_inner_loop
+
+.sq_root_compute_varargs_print:
+
+		# Store RCX and RAX
+        pushq   %rcx
+        pushq   %rax
+        subq    $8, %rsp
+        movl    -56(%rbp, %rcx, 8), %esi
+        cmpl    $6, %ecx
+        jge     .read_from_stack
+        movl    -56(%rbp, %rcx, 8), %esi
+        jmp     .call_printf
+.read_from_stack:
+        movl    -32(%rbp, %rcx, 8), %esi
+.call_printf:
+
+		#Pass in two variable and print the statement
+        movl    %eax, %edx
+        movl    $format, %edi
+        xorq    %rax, %rax
         call    printf
-        # restore caller registers
-        addq    $8,%rsp                 # restore rsp
-        popq    %rax                    
-        popq    %rcx                     
-        jmp     .varargs_outer_loop
+        addq    $8, %rsp
+        popq    %rax
+        popq    %rcx
+        jmp     .sq_root_compute_varargs_outer_loop
+.no_more_args:
+
+		#Return if no more argument
+        movq    %rbp, %rsp
+        popq    %rbp
+        ret
 
 		
         .data
