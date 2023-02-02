@@ -7,4 +7,5 @@ gcc -std=c99 -pedantic -Wall -Wextra -Wno-deprecated -fno-stack-protector -no-pi
 
 
 * C to Assembly
+
 gcc –Og –S <sourcecode>.c
