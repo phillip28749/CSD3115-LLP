@@ -3,8 +3,15 @@
 \project       A4
 \author        Chen Yen Hsun, 20027671
 \par           email: c.yenhsun\@digipen.edu
-\date          March 25, 2023
-\brief         opt color convertor
+\date          March 28, 2023
+\brief         
+
+File contains two implementations of a function that converts a 
+column-oriented adjacency matrix representing a graph to an equivalent 
+row-oriented matrix. The first implementation, "basic_col_convert,"   
+uses a simple nested loop to perform the conversion. The second part of the 
+code, optimized the matrix into smaller blocks and processes each block 
+individually to improve cache locality. 
 
 Copyright (C) 2022 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents
@@ -15,7 +22,7 @@ Technology is prohibited.
 #define BLOCK_DIM (CACHE_SIZE/(int)sizeof(int))
 void opt_col_convert_single_threaded(int* G, int dim)
 {
-
+    // If the matrix size is too small, use the original code
 	int blocks = dim / BLOCK_DIM;
 	if(dim < BLOCK_DIM)
 	{
@@ -30,7 +37,10 @@ void opt_col_convert_single_threaded(int* G, int dim)
 			}
 		return;
 	}
+
 	int i = 0 ,j = 0;
+
+    // Loop through all block pairs and update the matrix accordingly
 	for(;i < blocks ; ++i)
 	{
 		int x_offset = i *  BLOCK_DIM;
@@ -39,27 +49,27 @@ void opt_col_convert_single_threaded(int* G, int dim)
 		{
 			if(i == j)
 				continue;
-			//ss << "------- iteration : " << i << "," << j << "---------\n";
 			int y_offset = j * BLOCK_DIM;
 			int dimy_offset = y_offset + BLOCK_DIM;
 			for(int x = x_offset; x < dimx_offset ; ++x)
 			{
 				for(int y = y_offset  ;  y < dimy_offset ; ++y)
 				{
-					int pos1 = (x) * dim + y; //x',y'
-					int pos2 = (y) * dim + x; //x ,y
+					int pos1 = (x) * dim + y; //position in the matrix at row `x` and column `y`
+					int pos2 = (y) * dim + x; //position in the matrix at row `y` and column `x`.
 					int val1 = G[pos1];
 					int val2 = G[pos2];
 					int result = val1 || val2;
-					//++counter;
+
+                    // Store the OR result back in the matrix for both the transposed and untransposed positions
 					G[pos1] = result;
 					G[pos2] = result;
-					//return;
-					//ss << "[" << pos1 << "][" << pos2 << "]\n";
 				}
 			}
 		}
 	}
+
+    // Handle any remaining rows/columns that didn't get covered by blocks
 	for(int z = 0;z < blocks;++z)
 	{
 		int offset = z * BLOCK_DIM;
@@ -69,18 +79,19 @@ void opt_col_convert_single_threaded(int* G, int dim)
 		{
 			for(int y = offset + x_count ;  y < dimz_offset ; ++y)
 			{
-				int pos1 = (x) * dim + y;
-				int pos2 = (y) * dim + x;
+				int pos1 = (x) * dim + y; // Current position in matrix
+				int pos2 = (y) * dim + x; // Transposed position in matrix
 				int val1 = G[pos1];
 				int val2 = G[pos2];
 				int result = val1 || val2;
-				//++counter;
+
 				G[pos1] = result;
 				G[pos2] = result;
-				//ss << "[" << pos1 << "][" << pos2 << "]\n";
 			}
 		}
 	}
+
+    // Handle the remaining rows/columns that didn't get covered by blocks
 	for(int i = 0; i < dim ; ++i)
 	{
 		for(int x =  blocks * BLOCK_DIM ; x < dim ;++x)
@@ -88,6 +99,8 @@ void opt_col_convert_single_threaded(int* G, int dim)
 			int val1 = G[x * dim + i];
 			int val2 = G[i * dim + x];
 			int result = val1 || val2;
+
+            // Store the OR result back in the matrix for both the transposed and untransposed positions
 			G[x * dim + i] =result;
 			G[i * dim + x] =result;
 		}
